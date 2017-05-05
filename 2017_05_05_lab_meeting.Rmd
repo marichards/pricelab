@@ -33,6 +33,19 @@ load(system.file(package="TReNA",
 mtx.sub[1:3,1:5]
 ```
 
+## Creating and Solving a TReNA Object
+
+```{r}
+trena <- TReNA(mtx.assay = mtx.sub, solver = "lasso")
+target.gene <- "MEF2C"
+tfs <- setdiff(rownames(mtx.sub), target.gene)
+tbl.out <- solve(trena, target.gene, tfs)
+```
+
+```{r echo = FALSE}
+knitr::kable(head(tbl.out,4))
+```
+
 ## TReNA in December 2016
 
 * 3 different "solvers"
@@ -45,26 +58,135 @@ mtx.sub[1:3,1:5]
      * Gene
      * Region
 
-## Using TReNA
+## Distribution Effects
 
+```{r}
+hist(mtx.sub, main = "As-is Data")
 
-
-
-## Slide with Bullets
-
-- Bullet 1
-- Bullet 2
-- Bullet 3
-
-## Slide with R Output
-
-```{r cars, echo = TRUE}
-summary(cars)
 ```
 
-## Slide with Plot
+## Transforming with arcsinh
 
-```{r pressure}
-plot(pressure)
+```{r}
+mtx.asinh <- asinh(mtx.sub)
+hist(mtx.asinh, main = "Asinh-Transformed Data")
+
 ```
 
+## Solvers effects
+
+```{r echo=FALSE, cache=TRUE}
+source(system.file(package="TReNA", 
+                  "utils/evaluateAllSolvers.R"))
+printf <- function(...) print(noquote(sprintf(...)))
+suppressMessages(tbl.all <- assess_ampAD154AllSolversAndDistributions())
+```
+
+## Pair Plots
+
+```{r echo = FALSE}
+pairs(tbl.all[c(2,4,6,8,10,12)],
+      labels = names(tbl.all)[c(2,4,6,8,10,12)])
+```
+
+## Correlations
+
+```{r echo = FALSE}
+knitr::kable(signif(cor(tbl.all[c(2,4,6,8,10,12)]),2))
+```
+
+## Takeaways from Past TReNA
+
+* Distribution matters
+    * As-is data is often quite skewed
+    * We recommend asinh or VOOM 
+* Solver choice matters
+    * Are 3 solvers sufficient?
+    * What else could/should we add?
+    * How do we compare between solvers?
+    
+## We've Added 5 (6) Solvers
+
+* [Square Root LASSO](https://cran.r-project.org/web/packages/flare/index.html)
+* [Pearson Correlation](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/cor.html)
+* [Spearman Correlation](https://stat.ethz.ch/R-manual/R-devel/library/stats/html/cor.html)
+* [LASSO P-Values](https://cran.r-project.org/web/packages/lassopv/index.html)
+* [Ridge Regression](https://cran.r-project.org/web/packages/glmnet/index.html)
+* Ensemble Solver
+
+## The Ensemble Solver
+
+```{r cache = TRUE, echo = FALSE}
+
+trena <- TReNA(mtx.assay = mtx.asinh, solver = "ensemble")
+target.gene <- "MEF2C"
+tfs <- setdiff(rownames(mtx.asinh), target.gene)
+tbl.out <- solve(trena, target.gene, tfs)
+knitr::kable(head((tbl.out[,c(1:3,6:9)])))
+```
+
+## The CandidateFilter Class
+
+* Feature selection is nice, but nothing new
+* Our value added is largely in how we filter predictors
+    * VarianceFilter class
+    * **FootprintFilter** class
+
+## Using a VarianceFilter
+
+```{r}
+variance.filter <- VarianceFilter(mtx.assay = mtx.asinh)
+tf.list <- getCandidates(variance.filter, extraArgs = list("target.gene" = "MEF2C", "var.size" = 0.5))
+str(tf.list)
+```
+
+## Using a FootprintFilter
+
+```{r echo = FALSE}
+footprint.filter <- FootprintFilter(mtx.assay = mtx.asinh)
+db.address <- system.file(package = "TReNA", "extdata")
+genome.db.uri <- paste("sqlite:/",db.address,"genome.sub.db", sep = "/")
+project.db.uri <- paste("sqlite:/",db.address,"project.sub.db", sep = "/")
+target.gene <- "MEF2C"
+extraArgs = list("target.gene" = target.gene,
+                                                        "genome.db.uri"=genome.db.uri, 
+                                                        "project.db.uri" = project.db.uri,
+                                                        "size.upstream" = 1000,
+                                                        "size.downstream" = 1000)
+```
+
+```{r cache=TRUE}
+tfs <- getCandidates(footprint.filter, extraArgs)
+str(tfs)
+```
+
+## More Flexible Footprint Operations
+
+We have public databases of footprints (with more on the way) 
+
+```{r}
+genome.db.uri    <- "postgres://bddsrds.globusgenomics.org/hg38"
+footprint.db.uri <- "postgres://bddsrds.globusgenomics.org/brain_hint"
+fpf <- FootprintFinder(genome.db.uri, footprint.db.uri, quiet=FALSE)
+```
+
+## The FootprintFinder Class
+
+```{r cache = TRUE}
+tbl.fp <- getFootprintsInRegion(fpf, "chr5", 88822685, 89011824)
+str(tbl.fp)
+```
+
+## Summing Up TReNA at Present
+
+1. Start with a matrix of expression data
+2. Transform the matrix to alter the distribution
+3. Use a filter to wean down predictors
+4. Run a feature selection with chosen solver
+
+## What's Next?
+
+* More databases
+* More filtering options
+    * DHS filter
+* Web application
