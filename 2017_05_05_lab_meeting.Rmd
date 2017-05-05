@@ -55,8 +55,8 @@ knitr::kable(head(tbl.out,4))
  
 * Footprint Finders
      * Pull out footprints from a:
-     * Gene
-     * Region
+         * Gene
+         * Region
 
 ## Distribution Effects
 
@@ -74,6 +74,8 @@ hist(mtx.asinh, main = "Asinh-Transformed Data")
 ```
 
 ## Solvers effects
+
+In addition to the distributions, 
 
 ```{r echo=FALSE, cache=TRUE}
 source(system.file(package="TReNA", 
@@ -179,14 +181,39 @@ str(tbl.fp)
 
 ## Summing Up TReNA at Present
 
+Current Workflow:
+
 1. Start with a matrix of expression data
 2. Transform the matrix to alter the distribution
 3. Use a filter to wean down predictors
 4. Run a feature selection with chosen solver
 
+Where do I get TReNA?
+
+* Accepted to Bioconductor Development Branch
+* (PriceLab Github)[http://trena.org]
+
 ## What's Next?
 
 * More databases
-* More filtering options
-    * DHS filter
+    * 22 tissue types
+    * 3 footprinting methods
+    * 2 different alignments
+* Structural changes to TReNA
+    * More filtering options
+        * DHS filter
+        * GO filter
 * Web application
+    * Ability to build TReNA workflows
+
+## Thank you
+
+Special thanks to:
+
+* Nathan Price
+* Paul Shannon
+* Cory Funk
+* Max Robinson
+* Rory Donovan-Maiye
+
+For More on TReNA, visit the [current TReNA webpage](https://pricelab.github.io/TReNA/)
