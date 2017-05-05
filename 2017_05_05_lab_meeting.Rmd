@@ -75,7 +75,7 @@ hist(mtx.asinh, main = "Asinh-Transformed Data")
 
 ## Solvers effects
 
-In addition to the distributions, 
+In addition to the distributions, solver choice can greatly affect results.
 
 ```{r echo=FALSE, cache=TRUE}
 source(system.file(package="TReNA", 
@@ -116,7 +116,7 @@ knitr::kable(signif(cor(tbl.all[c(2,4,6,8,10,12)]),2))
 * [Ridge Regression](https://cran.r-project.org/web/packages/glmnet/index.html)
 * Ensemble Solver
 
-## The Ensemble Solver
+## The Ensemble Solver class
 
 ```{r cache = TRUE, echo = FALSE}
 
@@ -125,6 +125,28 @@ target.gene <- "MEF2C"
 tfs <- setdiff(rownames(mtx.asinh), target.gene)
 tbl.out <- solve(trena, target.gene, tfs)
 knitr::kable(head((tbl.out[,c(1:3,6:9)])))
+```
+
+## Examining Solver PCA
+
+```{r echo = FALSE, fig.height=5,fig.width=5}
+
+   tbl.out <- tbl.out[,c(1:7)]
+   tbl.scale <- scale(tbl.out[,-1])
+   rownames(tbl.scale) <- tbl.out$gene
+   
+   # do pca on the matrix
+   pca <- prcomp(tbl.scale, center=FALSE, scale.=FALSE)
+   # view pca
+   #par(mar = c(1,1,0.5,1))
+   biplot(pca, c(1,2))
+```
+
+## Examining Solver PCA
+
+```{r echo = FALSE, fig.height=5,fig.width=5}
+
+   biplot(pca, c(1,3))
 ```
 
 ## The CandidateFilter Class
@@ -162,22 +184,19 @@ tfs <- getCandidates(footprint.filter, extraArgs)
 str(tfs)
 ```
 
-## More Flexible Footprint Operations
+## The FootprintFinder Class
 
 We have public databases of footprints (with more on the way) 
 
-```{r}
+```{r eval = FALSE}
 genome.db.uri    <- "postgres://bddsrds.globusgenomics.org/hg38"
 footprint.db.uri <- "postgres://bddsrds.globusgenomics.org/brain_hint"
 fpf <- FootprintFinder(genome.db.uri, footprint.db.uri, quiet=FALSE)
-```
-
-## The FootprintFinder Class
-
-```{r cache = TRUE}
 tbl.fp <- getFootprintsInRegion(fpf, "chr5", 88822685, 89011824)
 str(tbl.fp)
 ```
+
+Unfortunately, the databases decided to misbehave right now...
 
 ## Summing Up TReNA at Present
 
@@ -191,7 +210,7 @@ Current Workflow:
 Where do I get TReNA?
 
 * Accepted to Bioconductor Development Branch
-* (PriceLab Github)[http://trena.org]
+* [PriceLab Github](http://trena.org)
 
 ## What's Next?
 
