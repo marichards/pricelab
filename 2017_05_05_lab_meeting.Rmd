@@ -1,0 +1,70 @@
+---
+title: 'TReNA: Past, Present, and Future'
+author: "Matt Richards"
+date: "5/4/2017"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## What is TReNA?
+
+It's an R package for:
+
+- Feature selection
+- Footprinting
+- Functional genomics
+
+## Using TReNA
+
+When using TReNA, you'll need an assay matrix of expression data where:
+
+1. Rows are different genes
+2. Columns are different samples
+
+The TReNA package also comes with its own example data:
+
+```{r}
+suppressMessages(library(TReNA))
+load(system.file(package="TReNA", 
+                 "extdata/ampAD.154genes.mef2cTFs.278samples.RData"))
+mtx.sub[1:3,1:5]
+```
+
+## TReNA in December 2016
+
+* 3 different "solvers"
+     * LASSO
+     * Random Forest
+     * Bayes Spike
+ 
+* Footprint Finders
+     * Pull out footprints from a:
+     * Gene
+     * Region
+
+## Using TReNA
+
+
+
+
+## Slide with Bullets
+
+- Bullet 1
+- Bullet 2
+- Bullet 3
+
+## Slide with R Output
+
+```{r cars, echo = TRUE}
+summary(cars)
+```
+
+## Slide with Plot
+
+```{r pressure}
+plot(pressure)
+```
+
