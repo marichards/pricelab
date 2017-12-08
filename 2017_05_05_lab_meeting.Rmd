@@ -2,7 +2,9 @@
 title: 'TReNA: Past, Present, and Future'
 author: "Matt Richards"
 date: "5/4/2017"
-output: ioslides_presentation
+output:
+  beamer_presentation: default
+  ioslides_presentation: default
 ---
 
 ```{r setup, include=FALSE}
