@@ -1,0 +1,168 @@
+---
+title: "Code Examples for 11/10"
+author: "Matt Richards"
+date: "11/10/2017"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(trena)
+load(system.file(package="trena", "extdata/ampAD.154genes.mef2cTFs.278samples.RData"))
+```
+
+
+## Matrix Examination: Matrix
+
+```{r echo = FALSE}
+mtx.sub[1:5,1:5]
+```
+
+## Matrix Examination: Histogram
+```{r echo = FALSE}
+hist(mtx.sub)
+```
+
+## Candidate Filter Use and Output
+
+```{r}
+my.filter <- CandidateFilter()
+
+var.filter <- VarianceFilter(mtx.sub, 
+                             targetGene = "MEF2C", 
+                             varSize = 0.9)
+
+candidates <- getCandidates(var.filter)
+head(candidates$tfs)
+```
+
+## FootprintFilter Example
+
+```{r echo = FALSE}
+
+db.address <- system.file(package="trena", "extdata")
+genome.db.uri <- paste("sqlite:/",db.address,"mef2c.neighborhood.hg38.gtfAnnotation.db", sep = "/")
+project.db.uri <- paste("sqlite:/",db.address,"mef2c.neigborhood.hg38.footprints.db", sep = "/")
+tss <- 88904257
+gene.regions <- data.frame(chrom="chr5",
+                           start= tss - 1000,
+                           end= tss + 1000,
+                           stringsAsFactors = FALSE)
+```
+
+```{r}
+# Create a filter
+footprint.filter <- FootprintFilter(genomeDB = genome.db.uri, 
+                                    footprintDB = project.db.uri,
+                                    regions = gene.regions)
+
+# Run the getCandidates method
+tbl <- getCandidates(footprint.filter)[[1]]
+tbl[1:5,c(1,8,11)]
+```
+
+## HumanDHS Example
+
+```{r echo = FALSE}
+load(system.file(package="trena", "extdata/ampAD.154genes.mef2cTFs.278samples.RData"))
+db.address <- system.file(package="trena", "extdata")
+
+targetGene <- "VRK2"
+promoter.length <- 1000
+genome.db.uri    <- paste("sqlite:/", db.address, "vrk2.neighborhood.hg38.gtfAnnotation.db",  sep = "/")
+jaspar.human <- as.list(query(query(MotifDb, "sapiens"),"jaspar2016"))
+
+# Grab regions for VRK2 using shoulder size of 1000
+trena <- Trena("hg38")
+tbl.regions <- getProximalPromoter(trena, "VRK2", 1000, 1000)
+ 
+```
+
+```{r}
+hd.filter <- HumanDHSFilter(genomeName = "hg38", 
+                            pwmMatchPercentageThreshold = 95,
+                            geneInfoDatabase.uri = genome.db.uri, 
+                            regions = tbl.regions, 
+                            pfms = jaspar.human)
+getCandidates(hd.filter)[1:5, c(1,6,7)]
+```
+
+## GO Example
+
+```{r echo = FALSE}
+library(org.Hs.eg.db)
+```
+
+```{r}
+goFilter <- GeneOntologyFilter(org.Hs.eg.db, GOTerm="GO:0006351")
+head(getCandidates(goFilter)$tfs)
+
+```
+
+## All Solvers demo
+
+```{r}
+getAvailableSolvers()
+```
+
+## New LASSO demo
+
+```{r echo = FALSE}
+library(MotifDb)
+tbl.tfs <- associateTranscriptionFactors(MotifDb, tbl, source="MotifDb", expand.rows=TRUE)
+```
+
+
+```{r}
+lasso.solver <- LassoSolver(mtx.assay = mtx.sub,
+                            targetGene = "MEF2C",
+                            candidateRegulators = tbl.tfs$geneSymbol)
+output <- run(lasso.solver)
+head(output)
+```
+
+## Ensemble Demo
+
+
+```{r}
+ensemble.solver <- EnsembleSolver(mtx.assay = mtx.sub, 
+                                  targetGene = "MEF2C",
+                                  candidateRegulators = 
+                                    tbl.tfs$geneSymbol,
+                                  solverNames = c("lasso",
+                                                  "pearson",
+                                                  "randomforest"))
+head(run(ensemble.solver))
+```
+
+## Trena Demo
+
+```{r echo = FALSE}
+database.filename <- system.file(package="trena", "extdata", "mef2c.neigborhood.hg38.footprints.db")
+database.uri <- sprintf("sqlite://%s", database.filename)
+chromosome <- "chr5"
+mef2c.tss <- 88904257
+loc.start <- mef2c.tss -1000
+loc.end <- mef2c.tss + 1000
+```
+
+```{r}
+trena <- Trena("hg38")
+
+motifs.list <- getRegulatoryChromosomalRegions(trena,"chr5", 
+                                               loc.start, 
+                                               loc.end,
+                                               database.uri, 
+                                               "MEF2C", 
+                                               mef2c.tss)
+```
+
+```{r echo = FALSE}
+tbl.motifs.tfs <- associateTranscriptionFactors(MotifDb, motifs.list[[1]], source="MotifDb", expand.rows=TRUE)
+```
+
+```{r}
+model.mef2c <- createGeneModel(trena, "MEF2C", 
+                               c("lasso","ridge","randomforest"), 
+                               tbl.motifs.tfs, mtx.sub)
+```
